@@ -1,0 +1,251 @@
+---
+title: "Untitled"
+output: pdf_document
+date: "2025-12-26"
+---
+```{r}
+install.packages("ggplot2")
+library(ggplot2)
+```
+```{r}
+install.packages("readxl")
+library(readxl)
+```
+```{r}
+install.packages("dplyr")
+library(dplyr)
+```
+```{r}
+install.packages("GGally")
+library(GGally)
+```
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+data<- read_excel("theatre_data.xlsx")
+```
+```{r}
+install.packages("devtools")
+library(devtools)
+
+# Use the {devtools} package to install the {TRmaps} package.
+devtools::install_github("htastan/TRmaps") 
+#:: means use the function from a specific package
+library(TRmaps)
+
+# Additionally, the {sf} package needs to be installed. This is necessary 
+# for visualizing spatial data types.
+install.packages("sf")
+library(sf)
+```
+```{r}
+data("tr_nuts3")
+```
+```{r}
+data2 <- left_join (tr_nuts3, data, by = c("name_tr" = "citys"))
+```
+
+```{r}
+ggplot(data2) +
+geom_sf(aes(fill = ap_rate)) +
+geom_sf_text(aes(label=name_tr),size=2.5)+
+theme_void()+
+theme( plot.title= element_text(
+color="black" , face="bold" ),
+legend.title= element_text(
+color="black"
+))+
+scale_fill_gradient(low = "white",high="darkmagenta")+
+labs(title="Audience Rate By Province",
+fill="Rate (%)")+
+  theme(
+    plot.title = element_text(size = 20, face = "bold", hjust=0.5),
+    legend.position = "bottom",
+      legend.title= element_text(size=15)
+  )
+ggsave("harita.png", width = 10, height =7, dpi = 300, bg = "white")
+```
+```{r}
+ggplot(data, aes(fill = or_trans, x = reorder(type, +total_show), y = total_show)) +
+  geom_bar(position = "stack", stat = "identity") +
+  geom_text(aes(label = paste0(round(pct_ot, 1), "%")), 
+            position = position_stack(vjust = 0.5), 
+            color = "white", 
+            size = 3.5, 
+            fontface = "bold") +
+  na.omit(data)+
+  coord_flip() +
+  scale_y_sqrt() +
+  scale_fill_manual(values = c("original" = "#B22222", "translated" = "darkblue"),
+                    labels = c("Original Show", "Translated Show")) +
+  scale_x_discrete(labels = c("private" = "Private Theaters",
+                              "municipal" = "Municipal Theaters",
+                              "university" = "University Theaters",
+                              "state" = "State Theaters",
+                              "institution" = "NGO Theaters")) +
+  labs(x = "",
+       y = "Number of Shows",
+       title = "Comparison of Original and Translated Shows ") +
+  theme_bw() +
+  theme(
+  axis.text = element_text(size = 17, color = "black"), 
+  axis.title = element_text(size = 16, face = "bold"), 
+  plot.title = element_text(size = 25, face = "bold"),
+  legend.text = element_text(size = 16, face="bold"),
+    legend.title = element_blank(),
+        legend.position = "bottom")
+
+  ggsave("bar_ot.png", width = 12, height = 6, dpi = 300)
+```
+```{r}
+ggplot(data, aes(fill = age_group, x = reorder(type, +t_show), y = t_show)) +
+  geom_bar(position = "stack", stat = "identity") +
+  geom_text(aes(label = paste0(round(pct_ac, 1), "%")), 
+            position = position_stack(vjust = 0.8), 
+            color = "white", 
+            size = 3, 
+            fontface = "bold") +
+  na.omit(data)+
+  coord_flip() +
+  scale_y_sqrt() +
+  scale_fill_manual(values = c("adult" = "darkorchid4", "children" = "#FC7E03"),
+                    labels = c("Adult Show", "Child Show")) +
+  scale_x_discrete(labels = c("private" = "Private Theaters",
+                              "municipal" = "Municipal Theaters",
+                              "university" = "University Theaters",
+                              "state" = "State Theaters",
+                              "institution" = "NGO Theaters")) +
+  labs(x = "",
+       y = "Number of Shows",
+       title = "Comparison of Adult and Children Shows") +
+  theme_bw() +
+  theme(
+     axis.text = element_text(size = 17, color = "black"), 
+  axis.title = element_text(size = 16, face="bold"), 
+  plot.title = element_text(size = 25, face = "bold"),
+  legend.text = element_text(size = 16, face="bold"),
+    legend.title = element_blank(),
+        legend.position = "bottom")
+ggsave("bar_ac.png", width = 12, height = 6, dpi = 300)
+```
+
+
+
+```{r}
+k <- max(data$y_perf, na.rm = TRUE) / max(data$y_ap_rate, na.rm = TRUE)
+```
+```{r}
+ggplot(data, aes(x = year)) +
+ geom_line(aes(y = y_perf, color = "Total Number Of Performances"), linewidth = 3,alpha=0.5) +
+ geom_line(aes(y = y_ap_rate * k, color = "Audience To Population Ratio"), linewidth = 3,alpha=0.5) +
+ scale_y_continuous(
+  name = "Total Number Of Performances",
+  sec.axis = sec_axis(~./k, name = "Audience To Population Ratio")) +
+  scale_color_manual(name = "Variables", values = c("Total Number Of Performances" = "darkcyan", "Audience To Population Ratio"="darkmagenta"))+
+  labs(title = "Time Series Comparison",
+x="Year") +
+theme_minimal() +
+theme(
+  legend.position = "bottom", 
+  
+    legend.title = element_blank(),
+panel.border = element_blank(),
+panel.grid.major.x = element_blank(),
+panel.grid.minor.x = element_blank(),
+panel.grid.major.y = element_line(color = "azure4", linetype = "solid",size=0,5),
+panel.grid.minor.y = element_blank(),
+axis.line.x = element_line(color = "black"),
+axis.line.y = element_blank(),
+axis.title.y.left = element_text(color = "darkcyan",size=19, face="bold"),
+axis.title.y.right = element_text(color = "darkmagenta",size=19, face="bold"),
+axis.title.x.bottom = element_blank(),
+plot.title = element_text(size = 25, face = "bold"),
+axis.text = element_text(size = 18, color = "black"), 
+  axis.title = element_text(size = 18), 
+  legend.text = element_text(size = 17,face="bold" ),
+)
+ggsave("time.png", width = 12, height = 6, dpi = 300)
+
+```
+
+
+
+
+
+```{r}
+etiket<-data%>%
+filter(citys %in%c("İstanbul","Zonguldak","Şırnak","Tunceli","Eskişehir","Kırıkkale","Erzurum"))
+```
+
+```{r}
+ggplot(data, aes(x = ap_rate, y = s_rate, colour = perf)) +
+ geom_point(size=5) +
+ geom_text(data=etiket,aes(label=citys),
+    vjust=-0.5,
+     hjust=0.5,
+     size=8,
+     color="black")+
+  geom_smooth(method=lm , color="black", se=FALSE, linetype="dashed",linewidth=1)+
+    labs(title = "Correlation Between Theater Attendance-Hall Occupancy Rate By Province",
+x="Audience Size to Population Ratio",
+ y="Theater Hall Occupancy Rate",
+colour="Number Of Performances")+
+scale_color_gradient(low="lightblue",high="darkblue",trans="log10",labels = scales::label_comma())+
+guides(color=guide_colorbar(barwidth=18))+
+  theme_light()+
+  theme(
+    plot.title = element_text(size = 28, face = "bold", hjust = 0.5),
+  axis.title = element_text(size = 25, face = "bold"),
+  axis.text = element_text(size = 25, color = "black"),
+  legend.title = element_text(size = 20, face = "bold"),
+  legend.text = element_text(size = 18),
+    legend.position = "bottom"
+  )
+ggsave("scatter.png", width = 18, height = 10, dpi = 300, bg = "white")
+```
+
+
+```{r}
+install.packages("tidyr")
+library(tidyr)
+```
+```{r}
+install.packages("scales")
+library(scales)
+```
+```{r}
+top_15 <- data %>% 
+  slice_max(order_by = child_perf, n = 15, with_ties = FALSE)
+bottom_15 <- data %>% 
+  slice_min(order_by = child_perf, n = 15, with_ties = FALSE)
+middle_pool <- data %>% 
+  filter(!citys %in% top_15$citys & !citys %in% bottom_15$citys) %>%
+  sample_n(10)
+data_selected <- bind_rows(top_15, bottom_15,middle_pool)
+ggplot(data_selected, aes(x = child_perf, y = reorder(citys, child_perf))) +
+  geom_segment(aes(x = 0, xend = child_perf, y = citys, yend = citys), 
+               color = "grey85", linewidth = 1) +
+  geom_point(color = "#FC7E03", size = 6) + 
+  geom_text(aes(label = child_perf), hjust = -0.4, size = 6, fontface = "bold") +
+  scale_x_continuous(trans = "pseudo_log", 
+                     breaks = c(0, 10, 100, 1000, 10000), 
+                     labels = label_comma()) + 
+  
+  labs(title = "Number of Children’s Theatre Performances by Province",
+       x = "Number of Performances", y = "") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 30, face = "bold", hjust = 0.5),
+    axis.title.x = element_text(size = 24, face = "bold"),
+    axis.text.y = element_text(size = 24,color = "black"),
+    axis.text.x = element_text(size = 20),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+ggsave("nokta.png", width = 16, height = 14, dpi = 300)
+```
